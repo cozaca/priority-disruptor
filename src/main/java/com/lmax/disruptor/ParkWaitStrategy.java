@@ -1,6 +1,6 @@
 /**
  * ParkWaitStrategy.java
- * @date 14-11-28 上午11:49
+ * @date 14-11-28
  * @author leo [leoyonn@gmail.com]
  * [CopyRight] All Rights Reserved.
  */

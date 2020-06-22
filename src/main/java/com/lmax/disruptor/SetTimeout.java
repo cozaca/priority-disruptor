@@ -1,7 +1,7 @@
 /**
  *
  * SetTimeout.java
- * @date 14-8-25 下午3:43
+ * @date 14-8-25
  * @author leo [leoyonn@gmail.com]
  * [CopyRight] All Rights Reserved.
  */

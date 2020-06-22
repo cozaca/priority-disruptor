@@ -1,8 +1,6 @@
 # priority-disruptor 
 ## A multi-priority Disruptor
-## 使用说明
-### 示例
-#### 启动disruptor：
+disruptor：
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         multiDisruptor = new MultiPriorityDisruptor<Event>(new EventFactory(), ringSize, executor, ProducerType.MULTI,
@@ -10,7 +8,7 @@
         multiDisruptor.handleEventsWith(new Handler());
         multiDisruptor.start();
 
-#### 向disruptor中发送消息：
+#### 向disruptor：
 
     boolean publishMulti(boolean sync, int priority, int idx, String value) {
         long sequence = 0;

@@ -1,7 +1,7 @@
 /**
  *
  * SleepingMultiPriorityWaitStrategy.java
- * @date 14-8-6 下午7:48
+ * @date 14-8-6
  * @author leo [leoyonn@gmail.com]
  * [CopyRight] All Rights Reserved.
  */

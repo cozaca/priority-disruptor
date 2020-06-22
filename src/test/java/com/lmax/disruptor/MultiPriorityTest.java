@@ -131,9 +131,9 @@ public class MultiPriorityTest {
         public void run() {
             for (int i = 0; i < N; i++) {
                 if (type == Type.Multi) {
-                    publishMulti(true, priority, i, "这是一个P" + priority + "的消息-" + i);
+                    publishMulti(true, priority, i, "multi" + priority + "multi-" + i);
                 } else {
-                    publishSingle(true, priority, i, "这是一个P" + priority + "的消息-" + i);
+                    publishSingle(true, priority, i, "single" + priority + "single-" + i);
                 }
             }
         }
