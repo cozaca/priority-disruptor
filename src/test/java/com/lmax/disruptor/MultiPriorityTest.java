@@ -62,7 +62,7 @@ public class MultiPriorityTest {
 
     void print(Object... objs) {
         for (Object o : objs) {
-            System.out.println(o);
+            System.out.println("## " + o);
         }
     }
 

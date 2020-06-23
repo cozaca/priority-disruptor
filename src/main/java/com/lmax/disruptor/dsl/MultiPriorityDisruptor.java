@@ -14,10 +14,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.lmax.disruptor.*;
 import com.lmax.disruptor.MultiPriorityWaitStrategy;
 
+import com.lmax.disruptor.*;
+import com.lmax.disruptor.dsl.BasicExecutor;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
+
+import java.util.Arrays;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * A {@link Disruptor} api with multiple priority(ring-buffer).
  * Can't extends Disruptor because private constructor...
- * 
+ *
  * @param <T> the type of event used.
  * @author leo
  */
@@ -25,7 +35,7 @@ public class MultiPriorityDisruptor<T> {
     private final RingBuffer<T>[] ringBuffers;
     private final PriorityConfig[] priorityConfigs;
     private final int size;
-    private final Executor executor;
+    private final  Executor executor;
     private final AtomicBoolean started = new AtomicBoolean(false);
     private final MultiPriorityWaitStrategy waitStrategy;
     private MultiPriorityProcessor<T> processor;
@@ -35,14 +45,23 @@ public class MultiPriorityDisruptor<T> {
      *
      * @param eventFactory   the factory to create events in the ring buffer.
      * @param ringBufferSize same size for all the ring-buffers.
-     * @param executor       an {@link Executor} to execute event processors.
+     * @param threadFactory       an {@link ThreadFactory} to execute event processors.
      * @param producerType   the claim strategy to use for the ring buffer.
      * @param waitStrategy   the wait strategy should be instanceof {@link MultiPriorityWaitStrategy}
      * @param batchPerRounds batch-per-round for each priority. <B>batchPerRound should be in descending order.</B>
      */
     public MultiPriorityDisruptor(final EventFactory<T> eventFactory, final int ringBufferSize,
-            final Executor executor, final ProducerType producerType, final MultiPriorityWaitStrategy waitStrategy,
-            final int... batchPerRounds) {
+                                  final ThreadFactory threadFactory, final ProducerType producerType, final MultiPriorityWaitStrategy waitStrategy,
+                                  final int... batchPerRounds) {
+        this(eventFactory, sameRingBufferSizes((batchPerRounds == null || batchPerRounds.length <= 1) ?
+                        1 : batchPerRounds.length, ringBufferSize),
+                new BasicExecutor(threadFactory), producerType, waitStrategy, batchPerRounds
+        );
+    }
+
+    public MultiPriorityDisruptor(final EventFactory<T> eventFactory, final int ringBufferSize,
+                                  final Executor executor, final ProducerType producerType, final MultiPriorityWaitStrategy waitStrategy,
+                                  final int... batchPerRounds) {
         this(eventFactory, sameRingBufferSizes((batchPerRounds == null || batchPerRounds.length <= 1) ?
                         1 : batchPerRounds.length, ringBufferSize),
                 executor, producerType, waitStrategy, batchPerRounds
@@ -54,14 +73,14 @@ public class MultiPriorityDisruptor<T> {
      *
      * @param eventFactory    the factory to create events in the ring buffer.
      * @param ringBufferSizes size the ring-buffers.
-     * @param executor        an {@link Executor} to execute event processors.
+     * @param threadFactory        an {@link ThreadFactory} to execute event processors.
      * @param producerType    the claim strategy to use for the ring buffer.
      * @param waitStrategy    the wait strategy should be instanceof {@link MultiPriorityWaitStrategy}
      * @param batchPerRounds  batch-per-round for each priority. <B>batchPerRound should be in descending order.</B>
      */
     public MultiPriorityDisruptor(final EventFactory<T> eventFactory, final int[] ringBufferSizes,
-            final Executor executor, final ProducerType producerType, final MultiPriorityWaitStrategy waitStrategy,
-            final int... batchPerRounds) {
+                                  final Executor executor, final ProducerType producerType, final MultiPriorityWaitStrategy waitStrategy,
+                                  final int... batchPerRounds) {
         if (ringBufferSizes.length != batchPerRounds.length) {
             throw new IllegalArgumentException("ring buffer size should be same as batch-per-rounds size");
         }
@@ -94,9 +113,11 @@ public class MultiPriorityDisruptor<T> {
         processor = new MultiPriorityProcessor<T>(ringBuffers, handler, waitStrategy, priorityConfigs);
     }
 
+
+
     /**
      * Publish an event to the ring buffer.
-     * 
+     *
      * @param eventTranslator the translator that will load data into the event.
      */
     public void publishEvent(final int priority, final EventTranslator<T> eventTranslator) {
@@ -105,7 +126,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * Publish an event to the ring buffer.
-     * 
+     *
      * @param eventTranslator the translator that will load data into the event.
      * @param arg A single argument to load into the event
      */
@@ -115,7 +136,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * Publish a batch of events to the ring buffer.
-     * 
+     *
      * @param eventTranslator the translator that will load data into the event.
      * @param arg An array single arguments to load into the events. One Per event.
      */
@@ -134,7 +155,7 @@ public class MultiPriorityDisruptor<T> {
      * <p>
      * This method must only be called once after all event processors have been added.
      * </p>
-     * 
+     *
      * @return this started disruptor.
      */
     public MultiPriorityDisruptor<T> start() {
@@ -181,7 +202,7 @@ public class MultiPriorityDisruptor<T> {
      * This method will not shutdown the executor, nor will it await the final termination of the processor
      * threads.
      * </p>
-     * 
+     *
      * @param timeout the amount of time to wait for all events to be processed. <code>-1</code> will give an
      *            infinite timeout
      * @param timeUnit the unit the timeOut is specified in
@@ -205,7 +226,7 @@ public class MultiPriorityDisruptor<T> {
     /**
      * The priority-th {@link RingBuffer} used by this Disruptor. This is useful for creating custom
      * event processors if the behaviour of {@link BatchEventProcessor} is not suitable.
-     * 
+     *
      * @return the ring buffer used by this Disruptor.
      */
     public RingBuffer<T> getRingBuffer(final int priority) {
@@ -214,7 +235,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * Get the value of the cursor indicating the published sequence.
-     * 
+     *
      * @return value of the cursor for events that have been published.
      */
     public long getCursor(final int priority) {
@@ -223,7 +244,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * The capacity of the data structure to hold entries.
-     * 
+     *
      * @return the size of the RingBuffer.
      * @see com.lmax.disruptor.Sequencer#getBufferSize()
      */
@@ -233,7 +254,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * Get the event for a given sequence in the RingBuffer.
-     * 
+     *
      * @param sequence for the event.
      * @return event for the sequence.
      * @see RingBuffer#get(long)
@@ -257,7 +278,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * Get next sequence of this priority.
-     * 
+     *
      * @param priority
      * @return
      */
@@ -267,7 +288,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * Try to get next sequence of this priority.
-     * 
+     *
      * @param priority
      * @return
      * @throws InsufficientCapacityException
@@ -278,7 +299,7 @@ public class MultiPriorityDisruptor<T> {
 
     /**
      * Publish the specified sequence of this priority.
-     * 
+     *
      * @param priority
      * @param sequence
      */
